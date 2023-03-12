@@ -1,6 +1,7 @@
 package mdjwt
 
 import (
+	"github.com/jeffotoni/quick/context"
 	"net/http"
 	"strings"
 	"time"
@@ -25,7 +26,10 @@ type KeyRefreshErrorHandler func(j *KeySet, err error)
 
 // Config defines the config for JWT middleware
 type Config struct {
+	// Quick stores the quick interal context
+	// Required. Default: nil
 	Quick *quickCtx.Ctx
+
 	// SuccessHandler defines a function which is executed for a valid token.
 	// Optional. Default: nil
 	SuccessHandler http.Handler
@@ -195,18 +199,24 @@ func (cfg *Config) getExtractors() []jwtExtractor {
 	// Initialize
 	extractors := make([]jwtExtractor, 0)
 	rootParts := strings.Split(cfg.TokenLookup, ",")
-	for _, rootPart := range rootParts {
-		parts := strings.Split(strings.TrimSpace(rootPart), ":")
+	for i := 0; i < len(rootParts); i++ {
+		parts := strings.Split(strings.TrimSpace(rootParts[i]), ":")
 
-		switch parts[0] {
-		case "header":
+		if parts[0] == "header" {
 			extractors = append(extractors, jwtFromHeader(parts[1], cfg.AuthScheme))
-		case "query":
+			continue
+		}
+		if parts[0] == "query" {
 			extractors = append(extractors, jwtFromQuery(parts[1]))
-		case "param":
+			continue
+		}
+		if parts[0] == "param" {
 			extractors = append(extractors, jwtFromParam(parts[1]))
-		case "cookie":
+			continue
+		}
+		if parts[0] == "cookie" {
 			extractors = append(extractors, jwtFromCookie(parts[1]))
+			continue
 		}
 	}
 	return extractors
