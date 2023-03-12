@@ -1,9 +1,10 @@
 package mdjwt
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jeffotoni/quick/context"
-
+	"net/http"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -128,6 +129,90 @@ func Test_jwtKeyFunc(t *testing.T) {
 			if errG != nil {
 				if errG.Error() != errW.Error() {
 					t.Errorf("jwtKeyFunc non match item |%v| |%v|", errG, errW)
+				}
+			}
+		})
+	}
+}
+
+// go test -v -failfast -run ^Test_jwtFromHeader$
+func Test_jwtFromHeader(t *testing.T) {
+	type args struct {
+		c          *quickCtx.Ctx
+		header     string
+		authScheme string
+	}
+	tests := []struct {
+		name string
+		args args
+		want func(c *quickCtx.Ctx) (string, error)
+	}{
+		{
+			name: "missing or malformed JWT",
+			args: args{
+				c: &quickCtx.Ctx{
+					Response: nil,
+					Request:  &http.Request{},
+					JsonStr:  "",
+					Headers: map[string][]string{
+						"": {},
+					},
+					Params: map[string]string{
+						"": "",
+					},
+					Query: map[string]string{
+						"": "",
+					},
+				},
+				header:     "",
+				authScheme: "",
+			},
+			want: func(*quickCtx.Ctx) (string, error) {
+				return "", errors.New("missing or malformed JWT")
+			},
+		},
+		{
+			name: "missing or malformed JWT",
+			args: args{
+				c: &quickCtx.Ctx{
+					Response: nil,
+					Request: &http.Request{
+						Header: map[string][]string{
+							"FRITA": []string{"BATATAAUTH"},
+						},
+					},
+					JsonStr: "",
+					Headers: map[string][]string{
+						"": {},
+					},
+					Params: map[string]string{
+						"": "",
+					},
+					Query: map[string]string{
+						"": "",
+					},
+				},
+				header:     "FRITA",
+				authScheme: "BATATAAUTH",
+			},
+			want: func(*quickCtx.Ctx) (string, error) {
+				return "", nil
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := jwtFromHeader(tt.args.header, tt.args.authScheme)
+
+			iG, errG := got(tt.args.c)
+			iW, errW := tt.want(tt.args.c)
+			if iG != iW {
+				t.Errorf("jwtFromHeader non match item |%v| |%v|", iG, iW)
+				return
+			}
+			if errG != nil {
+				if errG.Error() != errW.Error() {
+					t.Errorf("jwtFromHeader non match item |%v| |%v|", errG, errW)
 				}
 			}
 		})

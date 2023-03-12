@@ -24,7 +24,7 @@ func New(config ...Config) func(next http.Handler) http.Handler {
 			var auth string
 			var err error
 			for _, extractor := range extractors {
-				auth, err = extractor(*cfg.Quick)
+				auth, err = extractor(cfg.Quick)
 				if auth != "" && err == nil {
 					break
 				}
@@ -54,7 +54,7 @@ func New(config ...Config) func(next http.Handler) http.Handler {
 	}
 }
 
-type jwtExtractor func(c quickCtx.Ctx) (string, error)
+type jwtExtractor func(c *quickCtx.Ctx) (string, error)
 
 // jwtKeyFunc returns a function that returns signing key for given token.
 func jwtKeyFunc(config Config) jwt.Keyfunc {
@@ -76,10 +76,11 @@ func jwtKeyFunc(config Config) jwt.Keyfunc {
 }
 
 // jwtFromHeader returns a function that extracts token from the request header.
-func jwtFromHeader(header string, authScheme string) func(c quickCtx.Ctx) (string, error) {
-	return func(c quickCtx.Ctx) (string, error) {
+func jwtFromHeader(header string, authScheme string) func(c *quickCtx.Ctx) (string, error) {
+	return func(c *quickCtx.Ctx) (string, error) {
 		auth := c.Request.Header.Get(header)
 		l := len(authScheme)
+		fmt.Println(c.Request.Header, auth, l+1, strings.EqualFold(auth[:l], authScheme))
 		if len(auth) > l+1 && strings.EqualFold(auth[:l], authScheme) {
 			return strings.TrimSpace(auth[l:]), nil
 		}
@@ -88,8 +89,8 @@ func jwtFromHeader(header string, authScheme string) func(c quickCtx.Ctx) (strin
 }
 
 // jwtFromQuery returns a function that extracts token from the query string.
-func jwtFromQuery(param string) func(c quickCtx.Ctx) (string, error) {
-	return func(c quickCtx.Ctx) (string, error) {
+func jwtFromQuery(param string) func(c *quickCtx.Ctx) (string, error) {
+	return func(c *quickCtx.Ctx) (string, error) {
 		token := c.Request.URL.Query().Get(param)
 		if token == "" {
 			return "", errors.New("missing or malformed JWT")
@@ -99,8 +100,8 @@ func jwtFromQuery(param string) func(c quickCtx.Ctx) (string, error) {
 }
 
 // jwtFromParam returns a function that extracts token from the url param string.
-func jwtFromParam(param string) func(c quickCtx.Ctx) (string, error) {
-	return func(c quickCtx.Ctx) (string, error) {
+func jwtFromParam(param string) func(c *quickCtx.Ctx) (string, error) {
+	return func(c *quickCtx.Ctx) (string, error) {
 		token := c.Params[param]
 		if token == "" {
 			return "", errors.New("missing or malformed JWT")
@@ -110,8 +111,8 @@ func jwtFromParam(param string) func(c quickCtx.Ctx) (string, error) {
 }
 
 // jwtFromCookie returns a function that extracts token from the named cookie.
-func jwtFromCookie(name string) func(c quickCtx.Ctx) (string, error) {
-	return func(c quickCtx.Ctx) (string, error) {
+func jwtFromCookie(name string) func(c *quickCtx.Ctx) (string, error) {
+	return func(c *quickCtx.Ctx) (string, error) {
 		cookie, err := c.Request.Cookie(name)
 		if err != nil {
 			return "", err
