@@ -3,6 +3,7 @@ package quick
 import (
 	"bytes"
 	"errors"
+	"github.com/jeffotoni/quick/context"
 	"io"
 	"net/http/httptest"
 	"strings"
@@ -17,18 +18,18 @@ type (
 	}
 
 	quickMockCtxJSON struct {
-		Ctx    *Ctx
+		Ctx    *quickCtx.Ctx
 		Params map[string]string
 	}
 
 	quickMockCtxXML struct {
-		Ctx         *Ctx
+		Ctx         *quickCtx.Ctx
 		Params      map[string]string
 		ContentType string
 	}
 )
 
-func QuickMockCtxJSON(ctx *Ctx, params map[string]string) QuickMockCtx {
+func QuickMockCtxJSON(ctx *quickCtx.Ctx, params map[string]string) QuickMockCtx {
 	return &quickMockCtxJSON{
 		Ctx:    ctx,
 		Params: params,
